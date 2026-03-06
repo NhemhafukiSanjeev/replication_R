@@ -18,6 +18,7 @@ library(stargazer)
 library(flextable)
 library(modelsummary)
 library(pandoc)
+library(officer)
 
 ## search for indicators using keywords
 gdp <- WDIsearch("gdp")
@@ -235,7 +236,7 @@ ft <- flextable(summary_table) |>
   autofit()
 
 # Save to Word
-save_as_docx(ft, path = "summary_stats.docx")
+# save_as_docx(ft, path = "summary_stats.docx")
 
 ## 2. Correlation Matrix
 
@@ -288,7 +289,7 @@ ft <- flextable(cor_table) |>
   autofit()
 
 # Export to Word
-save_as_docx(ft, path = "correlation_matrix.docx")
+# save_as_docx(ft, path = "correlation_matrix.docx")
 
 ## Now let's move on to regression
 
@@ -345,9 +346,67 @@ reg_table <- modelsummary(
   hline_bottom(part = "body",   border = officer::fp_border(width = 2)) |>
   autofit()
 
-save_as_docx(reg_table, path = "regression_table.docx")
+# save_as_docx(reg_table, path = "regression_table.docx")
 
 
 ## save in word
 
-save_as_docx(reg_table, path = "regression_table.docx")
+# save_as_docx(reg_table, path = "regression_table.docx")
+
+## Diagnostic test
+
+# ── Appendix B: Breusch-Pagan LM Test for Random Effects ─────────────────────
+# Uses the pooling model to test whether random effects are needed
+bp_test <- plmtest(ols2, type = "bp")  # ols2 is your pooled OLS with all vars
+print(bp_test)
+
+# Build the variance table (Var and SD columns)
+bp_var_table <- data.frame(
+  Var = c("Inf", "e", "u"),
+  `SD = sqrt(Var)` = c(
+    sqrt(bp_test$statistic),   # placeholder — extract manually if needed
+    "",
+    ""
+  )
+)
+
+# ── Appendix C: Hausman Test ──────────────────────────────────────────────────
+# Compares Fixed Effect vs Random Effect
+hausman_test <- phtest(fe2, re2)
+print(hausman_test)
+
+# Build Hausman result table
+hausman_table <- data.frame(
+  ` `      = c("Chi-square test value", "P-value"),
+  `Coef.`  = c(round(hausman_test$statistic, 3),
+               round(hausman_test$p.value,   3))
+)
+
+# ── Export both to Word ───────────────────────────────────────────────────────
+
+# Hausman flextable
+ft_hausman <- flextable(hausman_table) |>
+  set_header_labels(X.. = "", Coef.. = "Coef.") |>
+  bold(part = "header") |>
+  align(j = 2, align = "right", part = "all") |>
+  hline_top(part = "header", border = fp_border(width = 1.5)) |>
+  hline_bottom(part = "header", border = fp_border(width = 1)) |>
+  hline_bottom(part = "body",   border = fp_border(width = 1.5)) |>
+  set_caption("Hausman (1978) specification test") |>
+  autofit()
+
+# BP LM test results as text + table in Word
+doc <- read_docx() |>
+  # Appendix B
+  body_add_par("Appendix B", style = "heading 2") |>
+  body_add_par("Breusch and Pagan Lagrangian multiplier test for random effects",
+               style = "Normal") |>
+  body_add_par(paste0("chibar2(01) = ", round(bp_test$statistic, 2)), style = "Normal") |>
+  body_add_par(paste0("Prob > chibar2 = ", round(bp_test$p.value, 4)), style = "Normal") |>
+  
+  # Appendix C
+  body_add_par("Appendix C", style = "heading 2") |>
+  body_add_flextable(ft_hausman)
+
+print(doc, target = "appendix_BC.docx")
+
