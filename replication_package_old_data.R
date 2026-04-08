@@ -150,7 +150,7 @@ library(pandoc)
 # ## so we have to filter out those countries. For that we need the list of the 
 # ## countries that were in the former analysis. 
 
-file_path <- "D:/Research/Does FDI have negative relationship with Inflation/replication_R/replication_R/"
+file_path <- "D:/Research/Does FDI have negative relationship with Inflation/replication_package/replication/"
 former_analysis_dat <- read_excel(paste0(file_path, "Final_data.xlsx"), sheet = "Final_data")
 
 # selected_country_year <- former_analysis_dat |> 
@@ -180,7 +180,7 @@ final_dat <- former_analysis_dat |>
 final_dat$c_Country <- as.numeric(factor(final_dat$Country))
 
 # Set data as panel data 
-panel_dat <- pdata.frame(final_dat, index = c("c_Country", "year"))
+panel_dat <- pdata.frame(final_dat, index = c("year", "c_Country"))
 
 # Describe the panel dataset (equivalent to xtdescribe)
 pdim(panel_dat)
@@ -295,7 +295,7 @@ ols1 <- plm(ln_cpi ~ ln_fdi,                        data = panel_dat, model = "p
 ols2 <- plm(ln_cpi ~ ln_fdi + ln_gdp + ln_popn,    data = panel_dat, model = "pooling")
 
 # Fixed Effect
-fe1  <- plm(ln_cpi ~ ln_fdi,                        data = panel_dat, model = "within")
+fe1  <- plm(ln_cpi ~ ln_fdi,                       data = panel_dat, model = "within")
 fe2  <- plm(ln_cpi ~ ln_fdi + ln_gdp + ln_popn,    data = panel_dat, model = "within")
 
 # Random Effect
